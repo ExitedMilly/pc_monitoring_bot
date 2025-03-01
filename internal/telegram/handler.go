@@ -17,6 +17,8 @@ func HandleUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		functions.HandleStatusCommand(update, bot)
 	case "net":
 		functions.HandleNetCommand(update, bot)
+	case "processes":
+		functions.HandleProcessesCommand(update, bot)
 	default:
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Неизвестная команда")
 		bot.Send(msg)

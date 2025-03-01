@@ -159,3 +159,79 @@ func parseFloat(s string) float64 {
 	fmt.Sscanf(s, "%f", &f)
 	return f
 }
+
+// GetGPUUsageForProcess возвращает нагрузку на GPU для конкретного процесса
+func GetGPUUsageForProcess(pid int32) float64 {
+	switch detectGPU() {
+	case "nvidia":
+		usage, _, err := getNvidiaGPUUsageForProcess(pid)
+		if err == nil {
+			return usage
+		}
+	case "amd":
+		usage, _, err := getAMDGPUUsageForProcess(pid)
+		if err == nil {
+			return usage
+		}
+	case "intel":
+		usage, _, err := getIntelGPUUsageForProcess(pid)
+		if err == nil {
+			return usage
+		}
+	}
+	return 0.0
+}
+
+// getNvidiaGPUUsageForProcess возвращает нагрузку на GPU NVIDIA для процесса
+func getNvidiaGPUUsageForProcess(pid int32) (float64, float64, error) {
+	out, err := exec.Command("nvidia-smi", "--query-compute-apps=pid,used_memory", "--format=csv,noheader,nounits").Output()
+	if err != nil {
+		return 0, 0, err
+	}
+	lines := strings.Split(string(out), "\n")
+	for _, line := range lines {
+		var p int32
+		var usage float64
+		fmt.Sscanf(line, "%d, %f", &p, &usage)
+		if p == pid {
+			return usage, 0, nil
+		}
+	}
+	return 0, 0, fmt.Errorf("процесс не найден")
+}
+
+// getAMDGPUUsageForProcess возвращает нагрузку на GPU AMD для процесса
+func getAMDGPUUsageForProcess(pid int32) (float64, float64, error) {
+	out, err := exec.Command("rocm-smi", "--showpidgpus").Output()
+	if err != nil {
+		return 0, 0, err
+	}
+	lines := strings.Split(string(out), "\n")
+	for _, line := range lines {
+		var p int32
+		var usage float64
+		fmt.Sscanf(line, "%d %f", &p, &usage)
+		if p == pid {
+			return usage, 0, nil
+		}
+	}
+	return 0, 0, fmt.Errorf("процесс не найден")
+}
+
+// getIntelGPUUsageForProcess возвращает нагрузку на GPU Intel для процесса
+func getIntelGPUUsageForProcess(pid int32) (float64, float64, error) {
+	out, err := exec.Command("intel_gpu_top", "-l", "-o", "-").Output()
+	if err != nil {
+		return 0, 0, err
+	}
+	lines := strings.Split(string(out), "\n")
+	for _, line := range lines {
+		var p int32
+		var usage float64
+		fmt.Sscanf(line, "%d %f", &p, &usage)
+		if p == pid {
+			return usage, 0, nil
+		}
+	}
+	return 0, 0, fmt.Errorf("процесс не найден")
+}

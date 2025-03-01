@@ -9,6 +9,10 @@ import (
 
 // HandleNetCommand обрабатывает команду /net
 func HandleNetCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	// Отправляем сообщение "Пожалуйста, подождите..."
+	waitMsg := tgbotapi.NewMessage(update.Message.Chat.ID, "Пожалуйста, подождите пару секунд...")
+	sentMsg, _ := bot.Send(waitMsg)
+
 	// Получаем информацию о IP
 	ipInfo, err := monitor.GetIPInfo()
 	if err != nil {
@@ -68,6 +72,11 @@ func HandleNetCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	}
 	output += "+------------------------------+"
 
+	// Удаляем сообщение "Пожалуйста, подождите..."
+	deleteMsg := tgbotapi.NewDeleteMessage(update.Message.Chat.ID, sentMsg.MessageID)
+	bot.Send(deleteMsg)
+
+	// Отправляем результат
 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, output)
 	bot.Send(msg)
 }

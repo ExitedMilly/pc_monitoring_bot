@@ -161,3 +161,28 @@ func GetNetworkUsage() string {
 
 	return networkInfo
 }
+
+// GetNetworkUsageForProcess возвращает сетевую активность для конкретного процесса
+func GetNetworkUsageForProcess(pid int32) (TrafficStats, error) {
+	conns, err := net.ConnectionsPid("all", pid)
+	if err != nil {
+		return TrafficStats{}, err
+	}
+
+	var downloadMB, uploadMB float64
+	for _, conn := range conns {
+		if conn.Status == "ESTABLISHED" {
+			io, err := net.IOCounters(false)
+			if err != nil {
+				continue
+			}
+			downloadMB += float64(io[0].BytesRecv) / 1024 / 1024
+			uploadMB += float64(io[0].BytesSent) / 1024 / 1024
+		}
+	}
+
+	return TrafficStats{
+		DownloadMB: downloadMB,
+		UploadMB:   uploadMB,
+	}, nil
+}
