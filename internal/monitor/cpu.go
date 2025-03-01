@@ -8,7 +8,7 @@ import (
 	"github.com/shirou/gopsutil/host"
 )
 
-// GetCPUUsage возвращает информацию о загруженности процессора
+// GetCPUUsage возвращает информацию о загруженности процессора в виде строки
 func GetCPUUsage() string {
 	percent, err := cpu.Percent(0, false)
 	if err != nil {
@@ -30,6 +30,30 @@ func GetCPUUsage() string {
 	}
 
 	return fmt.Sprintf("🔄 Загрузка: %.2f%%\n%s%s", percent[0], progressBar, tempInfo)
+}
+
+// GetCPUUsageValue возвращает загрузку CPU в процентах (float64)
+func GetCPUUsageValue() float64 {
+	percent, err := cpu.Percent(0, false)
+	if err != nil || len(percent) == 0 {
+		return 0.0
+	}
+	return percent[0]
+}
+
+// GetCPUTempValue возвращает температуру CPU в °C (float64)
+func GetCPUTempValue() float64 {
+	temps, err := host.SensorsTemperatures()
+	if err != nil {
+		return 0.0
+	}
+
+	for _, temp := range temps {
+		if temp.SensorKey == "coretemp" || strings.Contains(temp.SensorKey, "CPU") {
+			return temp.Temperature
+		}
+	}
+	return 0.0
 }
 
 // getProgressBar возвращает строку с полоской загрузки

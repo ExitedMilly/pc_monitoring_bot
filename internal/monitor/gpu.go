@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// GetGPUUsage возвращает информацию о видеокарте
+// GetGPUUsage возвращает информацию о видеокарте в виде строки
 func GetGPUUsage() string {
 	gpuType := detectGPU()
 
@@ -30,6 +30,50 @@ func GetGPUUsage() string {
 	}
 
 	return "🎮 Видеокарта: не удалось получить данные"
+}
+
+// GetGPUUsageValue возвращает загрузку GPU в процентах (float64)
+func GetGPUUsageValue() float64 {
+	switch detectGPU() {
+	case "nvidia":
+		usage, _, err := getNvidiaGPUUsage()
+		if err == nil {
+			return parseFloat(usage)
+		}
+	case "amd":
+		usage, _, err := getAMDGPUUsage()
+		if err == nil {
+			return parseFloat(usage)
+		}
+	case "intel":
+		usage, _, err := getIntelGPUUsage()
+		if err == nil {
+			return parseFloat(usage)
+		}
+	}
+	return 0.0
+}
+
+// GetGPUTempValue возвращает температуру GPU в °C (float64)
+func GetGPUTempValue() float64 {
+	switch detectGPU() {
+	case "nvidia":
+		_, temp, err := getNvidiaGPUUsage()
+		if err == nil {
+			return temp
+		}
+	case "amd":
+		_, temp, err := getAMDGPUUsage()
+		if err == nil {
+			return temp
+		}
+	case "intel":
+		_, temp, err := getIntelGPUUsage()
+		if err == nil {
+			return temp
+		}
+	}
+	return 0.0
 }
 
 // detectGPU определяет тип видеокарты

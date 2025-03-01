@@ -6,7 +6,7 @@ import (
 	"github.com/shirou/gopsutil/mem"
 )
 
-// GetMemoryUsage возвращает информацию о памяти
+// GetMemoryUsage возвращает информацию о памяти в виде строки
 func GetMemoryUsage() string {
 	memInfo, err := mem.VirtualMemory()
 	if err != nil {
@@ -22,4 +22,13 @@ func GetMemoryUsage() string {
 		usedPercent,
 		progressBar,
 	)
+}
+
+// GetMemoryUsageValue возвращает использование памяти в процентах (float64)
+func GetMemoryUsageValue() float64 {
+	memInfo, err := mem.VirtualMemory()
+	if err != nil {
+		return 0.0
+	}
+	return memInfo.UsedPercent
 }

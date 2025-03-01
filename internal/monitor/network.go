@@ -121,6 +121,15 @@ func GetNetworkSpeed() (float64, float64, error) {
 	return downloadSpeed, uploadSpeed, nil
 }
 
+// GetNetworkUsageValue возвращает текущую скорость сети в МБ/с (float64)
+func GetNetworkUsageValue() float64 {
+	download, _, err := GetNetworkSpeed()
+	if err != nil {
+		return 0.0
+	}
+	return download
+}
+
 // GetTrafficLast5Min возвращает общий трафик за последние 5 минут
 func GetTrafficLast5Min() (TrafficStats, error) {
 	io, err := net.IOCounters(false)

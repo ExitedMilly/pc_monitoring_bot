@@ -6,7 +6,7 @@ import (
 	"github.com/shirou/gopsutil/disk"
 )
 
-// GetDiskUsage возвращает информацию о дисках
+// GetDiskUsage возвращает информацию о дисках в виде строки
 func GetDiskUsage() string {
 	partitions, err := disk.Partitions(false)
 	if err != nil {
@@ -32,4 +32,13 @@ func GetDiskUsage() string {
 	}
 
 	return diskInfo
+}
+
+// GetDiskUsageValue возвращает загруженность дисков в процентах (float64)
+func GetDiskUsageValue() float64 {
+	usage, err := disk.Usage("/")
+	if err != nil {
+		return 0.0
+	}
+	return usage.UsedPercent
 }
