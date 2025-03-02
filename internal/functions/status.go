@@ -6,15 +6,14 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-// HandleStatusCommand обрабатывает команду /status
-func HandleStatusCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+// HandleStatusCommandOutput возвращает результат команды /status в виде строки
+func HandleStatusCommandOutput() string {
 	diskInfo := monitor.GetDiskUsage()
 	cpuUsage := monitor.GetCPUUsage()
 	gpuUsage := monitor.GetGPUUsage()
 	memInfo := monitor.GetMemoryUsage()
 	networkInfo := monitor.GetNetworkUsage()
 
-	// Форматируем вывод с рамками
 	output := "+------------------------------+\n"
 	output += "| 💽 Диски:                     \n"
 	output += "+------------------------------+\n"
@@ -37,6 +36,12 @@ func HandleStatusCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	output += networkInfo
 	output += "+------------------------------+"
 
+	return output
+}
+
+// HandleStatusCommand обрабатывает команду /status
+func HandleStatusCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	output := HandleStatusCommandOutput()
 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, output)
 	bot.Send(msg)
 }

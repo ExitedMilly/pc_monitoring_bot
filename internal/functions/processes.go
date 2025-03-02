@@ -98,3 +98,67 @@ func HandleProcessesCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, output)
 	bot.Send(msg)
 }
+
+// HandleProcessesCommandOutput возвращает результат команды /processes в виде строки
+func HandleProcessesCommandOutput() string {
+	processes, err := process.Processes()
+	if err != nil {
+		return "Ошибка при получении списка процессов"
+	}
+
+	var processInfoList []ProcessInfo
+	for _, p := range processes {
+		name, err := p.Name()
+		if err != nil {
+			continue
+		}
+
+		cpuPercent, err := p.CPUPercent()
+		if err != nil {
+			continue
+		}
+
+		memInfo, err := p.MemoryInfo()
+		if err != nil || memInfo == nil {
+			continue
+		}
+
+		gpuLoad := monitor.GetGPUUsageForProcess(p.Pid)
+		networkInfo, err := monitor.GetNetworkUsageForProcess(p.Pid)
+		if err != nil {
+			continue
+		}
+
+		processInfo := ProcessInfo{
+			Name:       name,
+			CPUUsage:   cpuPercent,
+			GPULoad:    gpuLoad,
+			MemoryMB:   float64(memInfo.RSS) / 1024 / 1024,
+			DownloadMB: networkInfo.DownloadMB,
+			UploadMB:   networkInfo.UploadMB,
+		}
+		processInfoList = append(processInfoList, processInfo)
+	}
+
+	sort.Slice(processInfoList, func(i, j int) bool {
+		return processInfoList[i].CPUUsage > processInfoList[j].CPUUsage
+	})
+
+	output := "+------------------------------+\n"
+	output += "| 🖥️ Топ-10 процессов:          \n"
+	output += "+------------------------------+\n"
+	for i, p := range processInfoList {
+		if i >= 10 {
+			break
+		}
+		output += fmt.Sprintf("%d. %s:\n", i+1, p.Name)
+		output += fmt.Sprintf("  ⚙️ CPU: %.1f%%\n", p.CPUUsage)
+		output += fmt.Sprintf("  🎮 GPU: %.1f%%\n", p.GPULoad)
+		output += fmt.Sprintf("  🧠 Память: %.1f МБ\n", p.MemoryMB)
+		output += fmt.Sprintf("  🌐 Сеть: ⬇️ %.1f МБ, ⬆️ %.1f МБ\n", p.DownloadMB, p.UploadMB)
+		output += "\n"
+	}
+	output += "+------------------------------+"
+
+	return output
+}

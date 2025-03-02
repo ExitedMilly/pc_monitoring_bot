@@ -9,8 +9,8 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-// HandleAlarmCommand обрабатывает команду /alarm
-func HandleAlarmCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+// HandleAlarmCommandOutput возвращает результат команды /alarm в виде строки
+func HandleAlarmCommandOutput() string {
 	output := "🚨 Уведомления: "
 	if monitor.AlarmEnabled {
 		output += "Включены\n"
@@ -53,6 +53,12 @@ func HandleAlarmCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		output += "\n⚠️ Ни одно пороговое значение не установлено. Используйте /alarm_set для настройки."
 	}
 
+	return output
+}
+
+// HandleAlarmCommand обрабатывает команду /alarm
+func HandleAlarmCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	output := HandleAlarmCommandOutput()
 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, output)
 	bot.Send(msg)
 }
@@ -100,7 +106,7 @@ func HandleAlarmSetCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	switch param {
 	case "cpu_temp":
 		monitor.AlarmThresholds.CPUTemp = value
-	case "gpu_temp":
+	case "gpu_tmp":
 		monitor.AlarmThresholds.GPUTemp = value
 	case "cpu_usage":
 		monitor.AlarmThresholds.CPUUsage = value
@@ -125,26 +131,5 @@ func HandleAlarmSetCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	}
 
 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("🚨 Порог для %s установлен на %.1f.", param, value))
-	bot.Send(msg)
-}
-
-// HandleAlarmTimeCommand обрабатывает команду /alarm_time
-func HandleAlarmTimeCommand(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
-	args := strings.Fields(update.Message.CommandArguments())
-	if len(args) != 1 {
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Использование: /alarm_time <время в минутах>")
-		bot.Send(msg)
-		return
-	}
-
-	interval, err := strconv.Atoi(args[0])
-	if err != nil || interval < 1 {
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Некорректное значение. Введите число больше 0.")
-		bot.Send(msg)
-		return
-	}
-
-	monitor.AlarmInterval = interval
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("🕒 Интервал уведомлений установлен на %d минут.", monitor.AlarmInterval))
 	bot.Send(msg)
 }
