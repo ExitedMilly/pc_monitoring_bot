@@ -3,6 +3,8 @@ package telegram
 import (
 	"TG_BOT_GO/internal/functions"
 	"log"
+	"strconv"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -28,12 +30,15 @@ func HandleUpdate(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 			functions.HandleAlarmOffCommand(update, bot)
 		case "alarm_set":
 			functions.HandleAlarmSetCommand(update, bot)
+		case "showproc":
+			functions.HandleShowProcCommand(update, bot)
 		default:
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Неизвестная команда")
 			bot.Send(msg)
 		}
 	} else if update.CallbackQuery != nil {
 		// Обработка callback-запросов от inline-кнопок
+
 		handleCallbackQuery(update.CallbackQuery, bot)
 	}
 }
@@ -44,23 +49,26 @@ func handleCallbackQuery(callback *tgbotapi.CallbackQuery, bot *tgbotapi.BotAPI)
 	messageID := callback.Message.MessageID
 	data := callback.Data
 
-	switch data {
-	case "monitoring":
+	switch {
+	case data == "monitoring":
 		sendMonitoringMenu(chatID, messageID, bot)
-	case "network_analysis":
+	case data == "network_analysis":
 		handleNetworkAnalysis(chatID, messageID, bot)
-	case "processes":
+	case data == "processes":
 		handleProcesses(chatID, messageID, bot)
-	case "status":
+	case data == "status":
 		handleStatus(chatID, messageID, bot)
-	case "alarm":
+	case data == "alarm":
 		handleAlarm(chatID, messageID, bot)
-	case "enable_alarm":
+	case data == "enable_alarm":
 		handleEnableAlarm(chatID, messageID, bot)
-	case "disable_alarm":
+	case data == "disable_alarm":
 		handleDisableAlarm(chatID, messageID, bot)
-	case "back":
-		sendWelcomeMessage(chatID, messageID, bot) // Возврат в главное меню
+	case data == "back":
+		sendWelcomeMessage(chatID, messageID, bot)
+	case strings.HasPrefix(data, "showproc_page_"): // Теперь это работает
+		page, _ := strconv.Atoi(strings.TrimPrefix(data, "showproc_page_"))
+		handleShowProcPage(chatID, messageID, page, bot)
 	default:
 		// Обработка других callback-запросов
 	}
@@ -225,4 +233,18 @@ func handleAlarm(chatID int64, messageID int, bot *tgbotapi.BotAPI) {
 	if err != nil {
 		log.Printf("Ошибка при редактировании сообщения: %v", err)
 	}
+}
+
+func handleShowProcPage(chatID int64, messageID int, page int, bot *tgbotapi.BotAPI) {
+	procs, totalPages, err := functions.GetProcessesPage(chatID, page)
+	if err != nil || len(procs) == 0 {
+		msg := tgbotapi.NewMessage(chatID, "❌ Нет данных для отображения")
+		bot.Send(msg)
+		return
+	}
+
+	message, keyboard := functions.FormatProcessesMessage(procs, page, totalPages)
+	editMsg := tgbotapi.NewEditMessageText(chatID, messageID, message)
+	editMsg.ReplyMarkup = &keyboard
+	bot.Send(editMsg)
 }
